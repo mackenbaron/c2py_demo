@@ -23,7 +23,7 @@ PyObject *make_real_list(real array[], size_t size) {
 
 void pargs_dec_ref(PyObject *tup) {
     printf("cleanup\n");
-    Py_DECREF(PyTuple_GetItem(tup, 0));
+    // Py_DECREF(PyTuple_GetItem(tup, 0));
     Py_DECREF(PyTuple_GetItem(tup, 1));
     Py_DECREF(PyTuple_GetItem(tup, 2));
     Py_DECREF(PyTuple_GetItem(tup, 3));
