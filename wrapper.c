@@ -1,5 +1,6 @@
 
 #include <Python.h>
+#include <time.h>
 
 #include "wrapper.h"
 
@@ -22,8 +23,7 @@ PyObject *make_real_list(real array[], size_t size) {
 }
 
 void pargs_dec_ref(PyObject *tup) {
-    printf("cleanup\n");
-    Py_DECREF(PyTuple_GetItem(tup, 0));
+    // Py_DECREF(PyTuple_GetItem(tup, 0));
     Py_DECREF(PyTuple_GetItem(tup, 1));
     Py_DECREF(PyTuple_GetItem(tup, 2));
     Py_DECREF(PyTuple_GetItem(tup, 3));
@@ -34,6 +34,7 @@ void pargs_dec_ref(PyObject *tup) {
 int
 main(int argc, char *argv[])
 {
+
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue;
     arglist al;
@@ -43,9 +44,6 @@ main(int argc, char *argv[])
         return 1;
     }
 
-    Py_Initialize();
-    pName = PyString_FromString(argv[1]);
-    /* Error checking of pName left out */
 
     int at[] = {0, 1};
     real ra[] = {5.123, 1.323};
@@ -59,6 +57,20 @@ main(int argc, char *argv[])
     al.derivs = derivs;
     al.hes = hes;
 
+    time_t start,end;
+    clock_t difference;
+    long int msec;
+
+    start=clock();//predefined  function in c
+    //after the user defined function does its work
+
+
+    /* begin repeat loop */
+    for (int c=0; c<10000; c++) {
+    Py_Initialize();
+
+    pName = PyString_FromString(argv[1]);
+    /* Error checking of pName left out */
 
     pModule = PyImport_Import(pName);
     Py_DECREF(pName);
@@ -69,7 +81,6 @@ main(int argc, char *argv[])
 
         if (pFunc && PyCallable_Check(pFunc)) {
 
-            printf("here\n");
 
             pArgs = PyTuple_New(5);
             PyTuple_SetItem(pArgs, 0, PyInt_FromLong(al.n));
@@ -79,20 +90,13 @@ main(int argc, char *argv[])
             PyTuple_SetItem(pArgs, 4, make_real_list(al.hes, al.n));
                 
 
-            printf("checking ra 1: %f\n", PyFloat_AsDouble(PyList_GetItem(PyTuple_GetItem(pArgs, 2), 1)));
 
-
-            printf("build\n");
 
             pValue = PyObject_CallObject(pFunc, pArgs);
-            printf("called\n");
 
 
             if (pValue != NULL) {
                 printf("Result of call: %ld\n", PyInt_AsLong(pValue));
-
-                printf("checking hes 2: %f\n", PyFloat_AsDouble(PyList_GetItem(PyTuple_GetItem(pArgs, 4), 2)));
-                printf("checking r 1: %f\n", PyFloat_AsDouble(PyList_GetItem(PyTuple_GetItem(pArgs, 2), 1)));
 
 
                 Py_DECREF(pValue);
@@ -110,7 +114,6 @@ main(int argc, char *argv[])
             /* decref arrays in object */
             pargs_dec_ref(pArgs);
             Py_XDECREF(pArgs);
-            printf("done\n");
 
         }
         else {
@@ -126,6 +129,16 @@ main(int argc, char *argv[])
         fprintf(stderr, "Failed to load \"%s\"\n", argv[1]);
         return 1;
     }
+
+    } /* repeat loop */
+
     Py_Finalize();
+    end=clock();
+
+    difference=(end-start);
+    msec = difference * 1000 / CLOCKS_PER_SEC;
+
+    fprintf(stderr, "Time %ld", msec);
+
     return 0;
 }
