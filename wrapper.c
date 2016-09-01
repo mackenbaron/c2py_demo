@@ -5,6 +5,28 @@
 #include "wrapper.h"
 
 
+static real local_V_vap(arglist *al){
+    real R_gas = 8.314472;
+
+    // Ideal gas molar volume
+    real T, P, V;
+    T = al->ra[al->at[0]];
+    P = al->ra[al->at[1]];
+    V = R_gas*T/P;
+    if(al->derivs){
+        al->derivs[0] = R_gas/P;
+        al->derivs[1] = -R_gas*T/(P*P);
+        if(al->hes){
+            al->hes[0] = 0;
+            al->hes[1] = -R_gas/(P*P); 
+            al->hes[2] = 2*R_gas*T/(P*P*P);
+        }
+    }
+    return V;
+}
+
+
+
 PyObject *make_int_list(int array[], size_t size) {
     PyObject *l = PyList_New(size);
     for (size_t i = 0; i != size; ++i) {
@@ -31,8 +53,53 @@ void pargs_dec_ref(PyObject *tup) {
 
 }
 
+int main()
+{
+
+    arglist al;
+
+
+    time_t start,end;
+    clock_t difference;
+    long int msec;
+    real value;
+
+    int at[] = {0, 1};
+    real ra[] = {5.123, 1.323};
+    real derivs[] = {0, 0, 0};
+    real hes[] = {0, 0, 0};
+
+    al.n = 3;
+    al.at = at;
+    al.ra = ra;
+    al.derivs = derivs;
+    al.hes = hes;
+
+
+    start=clock();//predefined  function in c
+    //after the user defined function does its work
+    for (int c=0; c<10000; c++) {
+
+
+    value = local_V_vap(&al);
+
+    printf("Result of call: %f\n", value);
+    
+
+    }
+    end=clock();
+
+    difference=(end-start);
+    msec = difference * 1000 / CLOCKS_PER_SEC;
+
+    fprintf(stderr, "Time %ld", msec);
+
+    return 0;
+}
+
+
 int
-main(int argc, char *argv[])
+lmain(int argc, char *argv[])
 {
 
     PyObject *pName, *pModule, *pFunc;
