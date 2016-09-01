@@ -5,25 +5,15 @@
 #include "wrapper.h"
 
 
-static real local_V_vap(arglist *al){
-    real R_gas = 8.314472;
+#include <sys/time.h>
 
-    // Ideal gas molar volume
-    real T, P, V;
-    T = al->ra[al->at[0]];
-    P = al->ra[al->at[1]];
-    V = R_gas*T/P;
-    if(al->derivs){
-        al->derivs[0] = R_gas/P;
-        al->derivs[1] = -R_gas*T/(P*P);
-        if(al->hes){
-            al->hes[0] = 0;
-            al->hes[1] = -R_gas/(P*P); 
-            al->hes[2] = 2*R_gas*T/(P*P*P);
-        }
-    }
-    return V;
-}
+#define N 10000
+
+#define gettime(T, V) do {                  \
+    gettimeofday(&(T), NULL);               \
+        V = (T).tv_sec + (T).tv_usec / 1e6; \
+    }                                       \
+    while(0)
 
 
 
@@ -53,58 +43,20 @@ void pargs_dec_ref(PyObject *tup) {
 
 }
 
-int main()
-{
-
-    arglist al;
-
-
-    time_t start,end;
-    clock_t difference;
-    long int msec;
-    real value;
-
-    int at[] = {0, 1};
-    real ra[] = {5.123, 1.323};
-    real derivs[] = {0, 0, 0};
-    real hes[] = {0, 0, 0};
-
-    al.n = 3;
-    al.at = at;
-    al.ra = ra;
-    al.derivs = derivs;
-    al.hes = hes;
-
-
-    start=clock();//predefined  function in c
-    //after the user defined function does its work
-    for (int c=0; c<10000; c++) {
-
-
-    value = local_V_vap(&al);
-
-    printf("Result of call: %f\n", value);
-    
-
-    }
-    end=clock();
-
-    difference=(end-start);
-    msec = difference * 1000 / CLOCKS_PER_SEC;
-
-    fprintf(stderr, "Time %ld", msec);
-
-    return 0;
-}
-
 
 int
-lmain(int argc, char *argv[])
+main(int argc, char *argv[])
 {
 
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue;
     arglist al;
+
+
+    double tm[N], t0, t1;
+    double max_t, min_t, mean_t;
+    int i;
+    struct timeval tv;
 
     if (argc < 3) {
         fprintf(stderr,"Usage: call pythonfile funcname [args]\n");
@@ -124,16 +76,14 @@ lmain(int argc, char *argv[])
     al.derivs = derivs;
     al.hes = hes;
 
-    time_t start,end;
-    clock_t difference;
-    long int msec;
 
-    start=clock();//predefined  function in c
-    //after the user defined function does its work
 
 
     /* begin repeat loop */
-    for (int c=0; c<10000; c++) {
+
+    for (i=0; i < N; i++) {
+
+    gettime(tv, t0);
     Py_Initialize();
 
     pName = PyString_FromString(argv[1]);
@@ -163,7 +113,7 @@ lmain(int argc, char *argv[])
 
 
             if (pValue != NULL) {
-                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                // printf("Result of call: %ld\n", PyInt_AsLong(pValue));
 
 
                 Py_DECREF(pValue);
@@ -197,15 +147,25 @@ lmain(int argc, char *argv[])
         return 1;
     }
 
+    gettime(tv, t1);
+    tm[i] = t1 - t0;
     } /* repeat loop */
 
     Py_Finalize();
-    end=clock();
 
-    difference=(end-start);
-    msec = difference * 1000 / CLOCKS_PER_SEC;
 
-    fprintf(stderr, "Time %ld", msec);
+    mean_t = max_t = 0;
+    min_t = 1e9;
+    for (i=0; i < N; i++) {
+        double dt = tm[i];
+        if (dt > max_t) max_t = dt;
+        if (dt < min_t) min_t = dt;
+        mean_t += dt;
+    }
+    mean_t = mean_t / N;
+    printf("%d timings: min=%lfus max=%lfus mean=%lfus\n",
+        N, min_t*1e6, max_t*1e6, mean_t*1e6);
+
 
     return 0;
 }
