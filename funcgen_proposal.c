@@ -3,7 +3,7 @@
  */
 
 
-// This is the core - automatically generate a wrapperstub that calls the python wrapper
+// This is the core - automatically generate a stub that calls the python wrapper
 #define FUNCGEN(funcname) real funcname(arglist *al) {  \
     return py_wrapper(al, funcname); \
 }
