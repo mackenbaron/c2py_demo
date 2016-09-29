@@ -40,7 +40,10 @@ real py_wrapper(arglist *al; funcname) {
 // So a user just needs to do the following to define a new function:
 
 FUNCGEN(h_vap)
-addfunc("h_vap", (rfunc)h_vap, t, -1, NULL);
 
+// This is inside void funcadd(AmplExports *ae){
+    
+   addfunc("h_vap", (rfunc)h_vap, t, -1, NULL);
 
+   // Note that h_vap must exist as a python function in phyp_prop.py
 
